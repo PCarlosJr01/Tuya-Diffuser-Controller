@@ -1,0 +1,1 @@
+Check current applied settings python -m tinytuya snapshot -snapshot-file "device_data/snapshot.json" -device-file "device_data/devices.json"

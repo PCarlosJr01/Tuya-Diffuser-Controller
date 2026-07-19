@@ -1,42 +1,34 @@
 import json
+from pathlib import Path
 
 import tinytuya
 
-
-ON_SETTINGS = {
-    1: True,
-    11: True,
-    12: 0,
-    13: "0",
-    14: 0,
-    103: "small",
-    108: "00aaff00c86464",
-    109: "white",
-    110: "2",
-    111: 255,
-}
-
-OFF_SETTINGS = {
-    1: False,
-    11: False,
-    12: 0,
-    13: "0",
-    14: 0,
-    103: "off",
-    108: "00aaff00c86464",
-    109: "white",
-    110: "2",
-    111: 255,
-}
+from settings import OFF_SETTINGS, ON_SETTINGS
 
 
+BASE_DIR = Path(__file__).resolve().parent
+DEVICE_FILE = BASE_DIR / "device_data" / "devices.json"
 
 
 def load_device():
-    with open("devices.json", "r", encoding="utf-8") as file:
+    if not DEVICE_FILE.exists():
+        raise FileNotFoundError(
+            f"Device configuration file not found:\n{DEVICE_FILE}"
+        )
+
+    with DEVICE_FILE.open("r", encoding="utf-8") as file:
         devices = json.load(file)
 
+    if not devices:
+        raise ValueError("No devices were found in devices.json.")
+
     device_info = devices[0]
+
+    required_fields = ("id", "ip", "key", "version")
+
+    for field in required_fields:
+        if field not in device_info:
+            raise KeyError(f"Missing '{field}' in devices.json.")
 
     device = tinytuya.Device(
         device_info["id"],
@@ -52,12 +44,47 @@ def load_device():
 def apply_settings(device, settings):
     for dp_id, value in settings.items():
         response = device.set_value(dp_id, value)
-        print(f"DP {dp_id}: {response}")
+
+        if response is None:
+            continue
+
+        if isinstance(response, dict) and response.get("Error"):
+            print(f"Failed to set DP {dp_id}: {response}")
+            return False
+
+    return True
 
 
 def main():
-    device = load_device()
-    apply_settings(device, ON_SETTINGS)
+    try:
+        device = load_device()
+
+        while True:
+            
+            user_setting = input("Enter 'on' to turn the diffuser on, or 'off' to turn it off and 'exit' to quit: ")
+            
+            if user_setting == "on":
+                if apply_settings(device, ON_SETTINGS):
+                    print("Diffuser settings applied successfully.")
+            elif user_setting == "off":
+                if apply_settings(device, OFF_SETTINGS):
+                    print("Diffuser settings applied successfully.")
+            elif user_setting == "exit":
+                break
+            else:
+                print("Invalid input. Please enter 'on', 'off', or 'exit'.")
+
+    except FileNotFoundError as error:
+        print(error)
+
+    except json.JSONDecodeError as error:
+        print(f"devices.json contains invalid JSON: {error}")
+
+    except (KeyError, ValueError, TypeError) as error:
+        print(f"Invalid device configuration: {error}")
+
+    except Exception as error:
+        print(f"Unable to control diffuser: {error}")
 
 
 if __name__ == "__main__":
