@@ -54,37 +54,67 @@ def apply_settings(device, settings):
 
     return True
 
+def print_selection():
+    print("Available selections:")
+    print("  on - Turn the diffuser on")
+    print("  off - Turn the diffuser off")
+    print("  exit - Quit the application")
+
+def create_credentials(file_path):
+    print("Creating new credentials.")
+    print("")
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    file_path.touch()
+
+
 
 def main():
-    try:
-        device = load_device()
+    file_path = Path("credentials") / "credentials.txt"
 
-        while True:
-            
-            user_setting = input("Enter 'on' to turn the diffuser on, or 'off' to turn it off and 'exit' to quit: ")
-            
-            if user_setting == "on":
-                if apply_settings(device, ON_SETTINGS):
-                    print("Diffuser settings applied successfully.")
-            elif user_setting == "off":
-                if apply_settings(device, OFF_SETTINGS):
-                    print("Diffuser settings applied successfully.")
-            elif user_setting == "exit":
-                break
-            else:
-                print("Invalid input. Please enter 'on', 'off', or 'exit'.")
+    while True:
+        if file_path.is_file():
+            print("Using cached credentials from file.")
+            print_selection()
 
-    except FileNotFoundError as error:
-        print(error)
+            try:
+                device = load_device()
 
-    except json.JSONDecodeError as error:
-        print(f"devices.json contains invalid JSON: {error}")
+                while True:
+                    user_setting = input("Enter a selection: ")
 
-    except (KeyError, ValueError, TypeError) as error:
-        print(f"Invalid device configuration: {error}")
+                    if user_setting == "on":
+                        if apply_settings(device, ON_SETTINGS):
+                            print("Diffuser settings applied successfully.")
 
-    except Exception as error:
-        print(f"Unable to control diffuser: {error}")
+                    elif user_setting == "off":
+                        if apply_settings(device, OFF_SETTINGS):
+                            print("Diffuser settings applied successfully.")
+
+                    elif user_setting == "exit":
+                        return
+
+                    else:
+                        print("Invalid input. Please enter 'on', 'off', or 'exit'.")
+
+            except FileNotFoundError as error:
+                print(error)
+
+            except json.JSONDecodeError as error:
+                print(f"devices.json contains invalid JSON: {error}")
+
+            except (KeyError, ValueError, TypeError) as error:
+                print(f"Invalid device configuration: {error}")
+
+            except Exception as error:
+                print(f"Unable to control diffuser: {error}")
+
+        else:
+            print("No cached credentials found.")
+
+            create_credentials(file_path)
+
+
 
 
 if __name__ == "__main__":
