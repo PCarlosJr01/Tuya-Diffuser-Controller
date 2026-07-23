@@ -3,7 +3,9 @@ from pathlib import Path
 
 import tinytuya
 
-from settings import OFF_SETTINGS, ON_SETTINGS
+from cli import cli_clear_credentials,   cli_create_credentials_choice,  cli_invalid_input,  cli_selection,  cli_using_cached_credentials
+from config import OFF_SETTINGS, ON_SETTINGS
+from credentials import create_credentials, delete_credentials
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -11,7 +13,7 @@ DEVICE_FILE = BASE_DIR / "device_data" / "devices.json"
 
 
 def load_device():
-    if not DEVICE_FILE.exists():
+    if not DEVICE_FILE.is_file():
         raise FileNotFoundError(
             f"Device configuration file not found:\n{DEVICE_FILE}"
         )
@@ -54,67 +56,72 @@ def apply_settings(device, settings):
 
     return True
 
-def print_selection():
-    print("Available selections:")
-    print("  on - Turn the diffuser on")
-    print("  off - Turn the diffuser off")
-    print("  exit - Quit the application")
 
-def create_credentials(file_path):
-    print("Creating new credentials.")
-    print("")
-    file_path.parent.mkdir(parents=True, exist_ok=True)
+def run_controller():
+    cli_using_cached_credentials(DEVICE_FILE)
+    cli_selection()
 
-    file_path.touch()
+    device = load_device()
 
+    while True:
+        user_setting = input("Enter a selection: ").strip().lower()
+
+        if user_setting == "on":
+            if apply_settings(device, ON_SETTINGS):
+                print("Diffuser settings applied successfully.")
+
+        elif user_setting == "off":
+            if apply_settings(device, OFF_SETTINGS):
+                print("Diffuser settings applied successfully.")
+
+        elif user_setting == "clear":
+            if delete_credentials(DEVICE_FILE):
+                cli_clear_credentials()
+                return
+
+        elif user_setting == "exit":
+            raise SystemExit
+
+        else:
+            cli_invalid_input()
 
 
 def main():
-    file_path = Path("credentials") / "credentials.txt"
-
     while True:
-        if file_path.is_file():
-            print("Using cached credentials from file.")
-            print_selection()
+        try:
+            if DEVICE_FILE.is_file():
+                run_controller()
+                continue
 
-            try:
-                device = load_device()
-
-                while True:
-                    user_setting = input("Enter a selection: ")
-
-                    if user_setting == "on":
-                        if apply_settings(device, ON_SETTINGS):
-                            print("Diffuser settings applied successfully.")
-
-                    elif user_setting == "off":
-                        if apply_settings(device, OFF_SETTINGS):
-                            print("Diffuser settings applied successfully.")
-
-                    elif user_setting == "exit":
-                        return
-
-                    else:
-                        print("Invalid input. Please enter 'on', 'off', or 'exit'.")
-
-            except FileNotFoundError as error:
-                print(error)
-
-            except json.JSONDecodeError as error:
-                print(f"devices.json contains invalid JSON: {error}")
-
-            except (KeyError, ValueError, TypeError) as error:
-                print(f"Invalid device configuration: {error}")
-
-            except Exception as error:
-                print(f"Unable to control diffuser: {error}")
-
-        else:
             print("No cached credentials found.")
 
-            create_credentials(file_path)
+            create_credentials_choice = cli_create_credentials_choice()
 
+            if create_credentials_choice != "y":
+                return
 
+            if not create_credentials(DEVICE_FILE):
+                return
+
+        except FileNotFoundError as error:
+            print(error)
+
+        except json.JSONDecodeError as error:
+            print(f"devices.json contains invalid JSON: {error}")
+
+        except (KeyError, ValueError, TypeError) as error:
+            print(f"Invalid device configuration: {error}")
+
+        except SystemExit:
+            return
+
+        except KeyboardInterrupt:
+            print()
+            print("Exiting diffuser controller.")
+            return
+
+        except Exception as error:
+            print(f"Unable to control diffuser: {error}")
 
 
 if __name__ == "__main__":

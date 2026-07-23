@@ -1,4 +1,3 @@
 .env
 device_data/
 __pycache__/
-credentials/
