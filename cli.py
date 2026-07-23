@@ -1,36 +1,48 @@
-def cli_selection():
-    print("""
+MENU = """
+==================================================
+              Tuya Device Controller
+==================================================
+
 Available selections:
 
-on    - Turn the diffuser on
-off   - Turn the diffuser off
-exit  - Quit the application
-clear - clear the cached credentials
-    """)
+  on     Turn the device on
+  off    Turn the device off
+  clear  Clear cached credentials
+  exit   Quit the application
+
+==================================================
+"""
+
+
+def cli_selection():
+    print(MENU)
+
 
 def cli_invalid_input():
-        print("""
-Invalid input please select from the following :
+    print()
+    print("Invalid selection. Please choose one of the options below.")
+    print(MENU)
 
-on    - Turn the diffuser on
-off   - Turn the diffuser off
-exit  - Quit the application
-clear - clear the cached credentials
-    """)
 
 def cli_clear_credentials():
-    print("""
-Cached credentials cleared.
+    print()
+    print("Cached credentials cleared successfully.")
+    print()
 
-""")
 
 def cli_using_cached_credentials(file_path):
-    print("""
-Using cached credentials from:  
-""" + str(file_path))
+    print()
+    print("Using cached credentials:")
+    print(f"  {file_path}")
+    print()
+
 
 def cli_create_credentials_choice():
-    return input("""
-Do you want to create new credentials? 
-Enter 'y' or any other input to exit: 
-    """).strip().lower()
+    print()
+    print("No cached credentials were found.")
+    print()
+
+    return input(
+        "Create new credentials? Enter 'y' to continue "
+        "or any other input to exit: "
+    ).strip().lower()
